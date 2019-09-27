@@ -8,16 +8,22 @@ TODO PIC
 course.name -> The name of the Course
 course.childNodes -> course sections
     per childNodes
-		.name -> Section Name
+		.name -> Section Name  ( usually one day)
 		childNodes
-		    per childNodes:
+		    per childNodes: -> subsection?? only one per section in my json files
+			    .name -> shoud be the same as section name
 			    .learningObjects   -> chapters/lessons of each section
 				    per learningObjects:
 					    .metadata
 						    .name -> Chaptername
 							.objective - > Task/Objective for the chapter
 							.baseUrl -> Baseurl for the Videofile
-							.cookies -> cookies needed for downloading
+							.cookies -> cookies needed for downloading from the baseUrl
+							.durationSeconds -> length of the video
+						slides: -> info about each slide, including stored notes
+						    per slide:
+				                .name 
+								.notes   -> stored notes for the current slide
 
 from baseURL/script.json we then get the inidivual slides:
 
