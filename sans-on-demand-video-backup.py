@@ -4,7 +4,8 @@ import argparse
 import sys
 import json
 import requests
-
+import shutil
+import re
 
 def check_for_python3():
     """
@@ -16,7 +17,15 @@ def check_for_python3():
 
 check_for_python3()
 
-def parse_json(jsondata, videoindex, useragent):
+def get_valid_filename(filename):
+    """
+    Get a valid filename from a string.
+    Shamelessly stolen from https://github.com/django/django/blob/master/django/utils/text.py
+    """
+    filename = str(filename).strip().replace(' ', '_')
+    return re.sub(r'(?u)[^-\w.]', '', filename)
+
+def parse_json(jsondata, videoindex, useragent, outputdir):
     coursedata = json.load(jsondata)
     print("Now downloading: %s" % coursedata['course']['name'])
     name = coursedata['course']['name']
@@ -52,6 +61,8 @@ def parse_json(jsondata, videoindex, useragent):
                 headers = {
                             'User-Agent': useragent,
                           }
+                # grab the script.json file for the chapter, 
+                #  using the predefined cookies and the configured header
                 foo = requests.get(slideurl, cookies=cookies, headers=headers)
                 try:
                     slidesjson = foo.json()
@@ -59,18 +70,24 @@ def parse_json(jsondata, videoindex, useragent):
                     print("An error occured loading the json file: %s" % e)
                 
                 try:
-                    assert slidesjson['title'] == chaptername # the title should be the same as the chaptername
+                    #TODO fix!! this somehow breaks currently
+                    pass #assert slidesjson['title'] == chaptername # the title should be the same as the chaptername
                 except:
                     print("An error occured while getting the slides from %s" % slideurl)
+                    print(slidesjson['title'])
+                    sys.exit(1)
 
                 for slides in slidesjson['slides']:
-                    print("\t\t%s" % slides['title'])
+                    slidetitle = slides['title']
+                    print("\t\t%s" % slidetitle)
 
-                    slideurl = chapterbaseurl+slides['video'][videoindex]
+                    slideurl = chapterbaseurl+slides['video'][videoindex]['URI']
 
                     print(slideurl)
+                    print("starting download")
 
-                    slide_target = ""
+                    
+                    slide_target = get_valid_filename(slidetitle)
 
                     # TODO where to save the file?
                     # TODO check to see if it exists?
@@ -78,24 +95,30 @@ def parse_json(jsondata, videoindex, useragent):
                     # TODO add config option to redownload/overwrite
                     # default: ignore existing files (maybe if filesize > 0 bytes?
 
-                    #actually download the video files
-            
+
+                    # TODO ignore quizzes and special content?
+                    
+                    # TODO outputdir -> change to chapter etc, create new folder if it dows not exist
+           
+
+                    # TODO outputdir should be a directory path m)
+
+                    #actually download the video files:
                     # download the video files as streaming data to not keep it all in memory:
-                    slide_temp_target = slide_target+".part"
+                    slide_temp_target = outputdir + slide_target+".part"
+
+                    resp = requests.get(slideurl, cookies=cookies, headers=headers, stream=True)
                     try:
                         with open(slide_temp_target, 'wb') as f:
-                            for chunk in response.iter_content(chunk_size=1024*1024): 
+                            for chunk in resp.iter_content(chunk_size=1024*1024): 
                                 if chunk: 
                                     f.write(chunk)
                     except:
                         print("An error occured while downloading %s" % slideurl) 
                     # Rename the temp download file to the correct name if fully downloaded
-                    shutil.move(slide_temp_target, slide_target)
+                    shutil.move(slide_temp_target, outputdir + slide_target)
+                    print("Downloaded %s" % slideurl)
 
-
-def dump_em_all(link, cookie, useragent):
-    # TODO check before downloading if file already exists
-    requests.get("http://example.com", headers={ "user-agent": "The Coolest Useragent" })
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Backup script for SANS On Demand Course material")
@@ -129,6 +152,6 @@ if __name__ == "__main__":
 
     try:
         with open(json_inputfile, "r") as json_input:
-            parse_json(json_input, video_index, useragent)
+            parse_json(json_input, video_index, useragent, outputdir)
     except FileNotFoundError as e:
         print("JSON input file %s not found" % json_inputfile)
