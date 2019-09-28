@@ -16,7 +16,7 @@ def check_for_python3():
 
 check_for_python3()
 
-def parse_json(jsondata):
+def parse_json(jsondata, videoindex, useragent):
     coursedata = json.load(jsondata)
     print("Now downloading: %s" % coursedata['course']['name'])
     name = coursedata['course']['name']
@@ -66,8 +66,32 @@ def parse_json(jsondata):
                 for slides in slidesjson['slides']:
                     print("\t\t%s" % slides['title'])
 
-                    for video in slides['video']:
-                        print(video)
+                    slideurl = chapterbaseurl+slides['video'][videoindex]
+
+                    print(slideurl)
+
+                    slide_target = ""
+
+                    # TODO where to save the file?
+                    # TODO check to see if it exists?
+                    # if it exists, print a warning?
+                    # TODO add config option to redownload/overwrite
+                    # default: ignore existing files (maybe if filesize > 0 bytes?
+
+                    #actually download the video files
+            
+                    # download the video files as streaming data to not keep it all in memory:
+                    slide_temp_target = slide_target+".part"
+                    try:
+                        with open(slide_temp_target, 'wb') as f:
+                            for chunk in response.iter_content(chunk_size=1024*1024): 
+                                if chunk: 
+                                    f.write(chunk)
+                    except:
+                        print("An error occured while downloading %s" % slideurl) 
+                    # Rename the temp download file to the correct name if fully downloaded
+                    shutil.move(slide_temp_target, slide_target)
+
 
 def dump_em_all(link, cookie, useragent):
     # TODO check before downloading if file already exists
@@ -105,6 +129,6 @@ if __name__ == "__main__":
 
     try:
         with open(json_inputfile, "r") as json_input:
-            parse_json(json_input)
+            parse_json(json_input, video_index, useragent)
     except FileNotFoundError as e:
         print("JSON input file %s not found" % json_inputfile)
