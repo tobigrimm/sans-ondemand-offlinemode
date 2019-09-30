@@ -129,6 +129,10 @@ if __name__ == "__main__":
     argparser.add_argument("-o","--output", default="dumps", metavar="outputdir", help="Directory for the output of the SANS course, default is dumps. Folder will be created if it does not already exist.")
     argparser.add_argument("jsonfile", metavar="jsonfile", help="Dumped jsonfile from the uberRequest on SANS On Demand Player")
     args = argparser.parse_args()
+
+    # TODO maybe add options and parsing logik to give SANS account data 
+    # and grab the uberRequest json file automatically
+
     # paremeters/options
     video_quality = args.quality  # SD or HD
     video_format = args.format # mp4 or webm
