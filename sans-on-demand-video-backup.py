@@ -6,6 +6,15 @@ import json
 import requests
 import shutil
 import re
+import os
+import mimetypes
+
+def create_dir(dirname):
+    """
+    Create a folder dirname if it doesn't exist yet
+    """
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 def check_for_python3():
     """
@@ -31,12 +40,18 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
     name = coursedata['course']['name']
     sections = coursedata['course']['childNodes']
 
+
+    # create outputdir
+    create_dir(outputdir)
+
     # get chapters
-    for section in sections:
+    for sectionnr, section in enumerate(sections):
         sectionname = section['name']
-        print(sectionname)
+        print(sectionnr, sectionname)
         subsections = section['childNodes']
-        
+       
+        sectiondir = outputdir + "/"+ get_valid_filename(str(sectionnr)+"_"+sectionname)
+        create_dir(sectiondir)
         for subsection in subsections:
 
             # should be the same as sectionname
@@ -48,14 +63,17 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
             
             chapters = subsection['learningObjects']
 
-            for chapter in chapters:
+            for chapternr, chapter in enumerate(chapters):
                 chapterdata = chapter['metadata']
                 chaptername = chapterdata['name']
                 chapterduration = chapterdata['durationSeconds']
                 chapterbaseurl = chapterdata['baseUrl']
                 chaptercookies = chapterdata['cookies']
-                print("\tChapter %s:" % chaptername)
-
+                print("\tChapter: %s" % chaptername)
+                
+                # TODO check if theres a proper way of getting dirs without strings (for windows?) 
+                chapterdir = sectiondir + "/"+ get_valid_filename(str(chapternr)+"_"+chaptername)
+                create_dir(chapterdir)
                 slideurl = chapterbaseurl + "/script.json"
                 cookies = {c['key']:c['value'] for c in chaptercookies}
                 headers = {
@@ -77,7 +95,7 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
                     print(slidesjson['title'])
                     sys.exit(1)
 
-                for slides in slidesjson['slides']:
+                for slidenr, slides in enumerate(slidesjson['slides']):
                     slidetitle = slides['title']
                     print("\t\t%s" % slidetitle)
 
@@ -105,9 +123,11 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
 
                     #actually download the video files:
                     # download the video files as streaming data to not keep it all in memory:
-                    slide_temp_target = outputdir + slide_target+".part"
+                    slide_temp_target = chapterdir + "/" + slide_target+".part"
 
                     resp = requests.get(slideurl, cookies=cookies, headers=headers, stream=True)
+                    content_type = resp.headers['content-type']
+                    extension = mimetypes.guess_extension(content_type)
                     try:
                         with open(slide_temp_target, 'wb') as f:
                             for chunk in resp.iter_content(chunk_size=1024*1024): 
@@ -116,7 +136,7 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
                     except:
                         print("An error occured while downloading %s" % slideurl) 
                     # Rename the temp download file to the correct name if fully downloaded
-                    shutil.move(slide_temp_target, outputdir + slide_target)
+                    shutil.move(slide_temp_target, chapterdir + "/" + str(slidenr) + "_" + slide_target + extension)
                     print("Downloaded %s" % slideurl)
 
 
