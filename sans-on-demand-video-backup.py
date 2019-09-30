@@ -34,7 +34,7 @@ def get_valid_filename(filename):
     filename = str(filename).strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', filename)
 
-def parse_json(jsondata, videoindex, useragent, outputdir):
+def parse_json(jsondata, videoindex, useragent, outputdir, debug):
     coursedata = json.load(jsondata)
     print("Now downloading: %s" % coursedata['course']['name'])
     name = coursedata['course']['name']
@@ -82,8 +82,14 @@ def parse_json(jsondata, videoindex, useragent, outputdir):
                 # grab the script.json file for the chapter, 
                 #  using the predefined cookies and the configured header
                 foo = requests.get(slideurl, cookies=cookies, headers=headers)
+
+
                 try:
                     slidesjson = foo.json()
+                    if debug:
+                        # save the script.json into the current chapter folder
+                        with open(chapterdir + "/" + 'script.json', 'w', encoding='utf-8') as f:
+                                json.dump(slidesjson, f, ensure_ascii=False, indent=4)
                 except ValueError as e:
                     print("An error occured loading the json file: %s" % e)
                 
@@ -144,7 +150,7 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Backup script for SANS On Demand Course material")
     argparser.add_argument("-q", "--quality", choices = ["SD","HD"], default="HD", help="Quality to download the material with from SANS. Available choices are SD and HD")
     argparser.add_argument("--format", choices=["mp4","webm"], default="mp4", help="Fileformat to dump in")
-    argparser.add_argument("-d","--debug",default=False)
+    argparser.add_argument("-d","--debug",default=False, action='store_true')
     argparser.add_argument("--useragent", default="Mozilla/5.0 (X11; Linux x86_64; rv:69.0) Gecko/20100101 Firefox/69.0")
     argparser.add_argument("-o","--output", default="dumps", metavar="outputdir", help="Directory for the output of the SANS course, default is dumps. Folder will be created if it does not already exist.")
     argparser.add_argument("jsonfile", metavar="jsonfile", help="Dumped jsonfile from the uberRequest on SANS On Demand Player")
@@ -176,6 +182,6 @@ if __name__ == "__main__":
 
     try:
         with open(json_inputfile, "r") as json_input:
-            parse_json(json_input, video_index, useragent, outputdir)
+            parse_json(json_input, video_index, useragent, outputdir, debug_mode)
     except FileNotFoundError as e:
         print("JSON input file %s not found" % json_inputfile)
