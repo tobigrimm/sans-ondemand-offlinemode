@@ -106,7 +106,8 @@ def parse_json(jsondata, videoindex, useragent, outputdir, debug):
                     print("\t\t%s" % slidetitle)
 
                     slideurl = chapterbaseurl+slides['video'][videoindex]['URI']
-
+                    slidenoteurl = chapterbaseurl+"/notes/%03d" % slidenr + ".html"
+                    print(slidenoteurl)
                     print(slideurl)
                     print("starting download")
 
@@ -144,6 +145,11 @@ def parse_json(jsondata, videoindex, useragent, outputdir, debug):
                     # Rename the temp download file to the correct name if fully downloaded
                     shutil.move(slide_temp_target, chapterdir + "/" + str(slidenr) + "_" + slide_target + extension)
                     print("Downloaded %s" % slideurl)
+
+                    resp = requests.get(slidenoteurl, cookies=cookies, headers=headers)
+                    # save the note for the current slide into the chapter folder next to the slide/video
+                    with open(chapterdir + "/" + str(slidenr) + "_" + slide_target + ".html", 'w', encoding='utf-8') as f:
+                        f.write(resp.text)
 
 
 if __name__ == "__main__":
