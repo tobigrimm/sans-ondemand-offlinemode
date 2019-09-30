@@ -106,7 +106,7 @@ def parse_json(jsondata, videoindex, useragent, outputdir, debug):
                     print("\t\t%s" % slidetitle)
 
                     slideurl = chapterbaseurl+slides['video'][videoindex]['URI']
-                    slidenoteurl = chapterbaseurl+"/notes/%03d" % slidenr + ".html"
+                    slidenoteurl = chapterbaseurl+"/notes/%03d" % (slidenr+1) + ".html"
                     print(slidenoteurl)
                     print(slideurl)
                     print("starting download")
